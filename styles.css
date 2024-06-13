@@ -1,0 +1,22 @@
+body {
+    padding-top: 60px;
+}
+
+.navbar {
+    margin-bottom: 20px;
+}
+
+.btn-primary,
+.btn-secondary {
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.btn-primary:hover {
+    transform: scale(1.1);
+    background-color: #0056b3;
+}
+
+.btn-secondary:hover {
+    transform: scale(1.1);
+    background-color: #6c757d;
+}

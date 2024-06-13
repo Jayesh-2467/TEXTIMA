@@ -1,0 +1,9 @@
+Flask
+Flask-SQLAlchemy
+Flask-WTF
+WTForms
+pytesseract
+Pillow
+nltk
+python-pptx
+fpdf

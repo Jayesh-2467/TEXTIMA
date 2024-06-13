@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter URL for Summarization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #e0eafc, #cfdef3); /* Faint blue gradient */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin-top: 10px;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: background 0.3s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            background: linear-gradient(to right, #2a5298, #1e3c72);
+        }
+    </style>
+</head>
+<body>
+    <form action="{{ url_for('summarize_website') }}" method="post">
+        <h1>Enter URL for Summarization</h1>
+        <label for="url">Website URL:</label>
+        <input type="text" id="url" name="url" required>
+        <label for="num_sentences">Number of Paragraphs:</label>
+        <input type="number" id="num_sentences" name="num_sentences" min="1" required>
+        <button type="submit">Summarize</button>
+    </form>
+</body>
+</html>

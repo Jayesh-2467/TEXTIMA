@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summary</title>
+    <style>
+        /* Body styles */
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #e0f7fa, #e1f5fe); /* Faint blue gradient */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Summary text container */
+        div {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Button styles */
+        .button {
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 2px;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: background 0.3s ease;
+        }
+
+        /* Hover effect */
+        .button:hover {
+            background: linear-gradient(to right, #2a5298, #1e3c72);
+        }
+
+        /* Container for buttons */
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <p>{{ summary }}</p>
+        <div class="button-container">
+            <!-- Form for downloading PDF -->
+            <form action="{{ url_for('download_pdf') }}" method="post" style="display:inline;">
+                <input type="hidden" name="summary_text" value="{{ summary }}">
+                <button type="submit" class="button">Download PDF</button>
+            </form>
+            <!-- Form for downloading PPTX -->
+            <form action="{{ url_for('download_pptx') }}" method="post" style="display:inline;">
+                <input type="hidden" name="summary_text" value="{{ summary }}">
+                <button type="submit" class="button">Download PPTX</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

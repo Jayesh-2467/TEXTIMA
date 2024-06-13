@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Text Summarization{% endblock %}
+{% block content %}
+    <h2>Enter Text for Summarization</h2>
+    <form method="post">
+        <div class="form-group">
+            <label for="text">Text</label>
+            <textarea name="text" id="text" class="form-control" rows="10"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="num_sentences">Number of Sentences</label>
+            <input type="number" name="num_sentences" id="num_sentences" class="form-control" min="1" max="10">
+        </div>
+        <button type="submit" class="btn btn-primary">Summarize</button>
+    </form>
+{% endblock %}

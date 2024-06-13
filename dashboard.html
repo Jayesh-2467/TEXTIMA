@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+    <h2>Welcome, {{ session['username'] }}</h2>
+    <a href="{{ url_for('image_summarization') }}" class="btn btn-primary">Summarize an Image</a>
+    <a href="{{ url_for('text_summarization') }}" class="btn btn-primary">Summarize Text</a>
+    <a href="{{ url_for('enter_url') }}" class="btn btn-primary">Enter Website URL</a>
+{% endblock %}
