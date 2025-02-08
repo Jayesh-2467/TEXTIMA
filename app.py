@@ -16,12 +16,23 @@ from io import BytesIO
 import tempfile
 import pytesseract
 from PIL import Image
+import nltk
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import simpleSplit
+from io import BytesIO
+import nltk
+nltk.download('punkt')
+from nltk.tokenize import sent_tokenize
+
+# Download the standard 'punkt' package (if not already downloaded)
+nltk.download('punkt')
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 # Specify the path to the Tesseract executable
-pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'  # Update this path as needed
+pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'  # Update this path as needed
 
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -110,75 +121,35 @@ def image_summarization():
         if file:
             file_path = os.path.join(app.config['UPLOADED_PHOTOS_DEST'], file.filename)
             file.save(file_path)
-
             text = extract_text_from_image(file_path)
             num_sentences = int(request.form['num_sentences'])
             summary = summarize_text(text, num_sentences)
-            
             session['summary'] = summary
             return redirect(url_for('summary'))
     return render_template('image_summarization.html')
 
 @app.route('/text-summarization', methods=['GET', 'POST'])
 def text_summarization():
-    if 'username' not in session:
-        return redirect(url_for('login'))
     if request.method == 'POST':
         text = request.form['text']
-        num_sentences = int(request.form['num_sentences'])
-        summary = summarize_text(text, num_sentences)
-        
-        session['summary'] = summary
+        summary = generate_summary(text)  # Generate summary
+        session['summary'] = summary  # Store in session
         return redirect(url_for('summary'))
+    
+    # If it's a GET request, just render the form page
     return render_template('text_summarization.html')
+
 
 @app.route('/summary')
 def summary():
     if 'summary' not in session:
         return redirect(url_for('dashboard'))
-    summary = session['summary']
-    return render_template('summary.html', summary=summary)
-
-@app.route('/download-pdf', methods=['POST'])
-def download_pdf():
-    summary_text = request.form['summary_text']
-    
-    # Create a BytesIO buffer to store PDF content
-    buffer = BytesIO()
-    
-    # Create a PDF canvas
-    c = canvas.Canvas(buffer, pagesize=letter)
-    
-    # Write the summary text to the PDF
-    text_object = c.beginText(100, 750)
-    for line in summary_text.split('\n'):
-        text_object.textLine(line)
-    c.drawText(text_object)
-    
-    # Save the PDF canvas to the buffer
-    c.save()
-    
-    # Get the PDF content from the buffer
-    pdf_data = buffer.getvalue()
-    
-    # Rewind the buffer
-    buffer.seek(0)
-    
-    # Send the PDF data as a file attachment
-    response = Response(
-        pdf_data,
-        mimetype='application/pdf',
-        headers={
-            'Content-Disposition': 'attachment; filename=summary.pdf'
-        }
-    )
-    return response
+    return render_template('summary.html', summary=session['summary'])
 
 @app.route('/enter-url', methods=['GET', 'POST'])
 def enter_url():
     if request.method == 'POST':
         url = request.form['url']
-        # Redirect to the summarization page with the URL as a query parameter
         return redirect(url_for('summarize_website', url=url))
     return render_template('enter_url.html')
 
@@ -187,54 +158,119 @@ def summarize_website():
     if request.method == 'POST':
         url = request.form['url']
         num_sentences = int(request.form['num_sentences'])
-        
         try:
-            # Fetch the HTML content of the website
             response = requests.get(url)
-            response.raise_for_status()  # Raise an error for HTTP status codes indicating failure
+            response.raise_for_status()
             html_content = response.text
-            
-            # Extract text content from HTML
             soup = BeautifulSoup(html_content, 'html.parser')
             text_content = ' '.join(soup.stripped_strings)
-            
-            # Summarize the text content
             summary = summarize_text(text_content, num_sentences)
-            
-            # Convert summary into a list of sentences
             sentences = sent_tokenize(summary)
-            
-            # Render the summary page with the summarized text and bullet points
             return render_template('website_summary.html', sentences=sentences)
         except Exception as e:
-            # Handle errors
             error_message = f"An error occurred: {e}"
             flash(error_message, 'danger')
             return redirect(url_for('index'))
-
     return render_template('summarize_website.html')
+
+@app.route('/download-pdf', methods=['POST'])
+def download_pdf():
+    summary_text = session.get('summary', '')  # Fetch summary from session
+
+    if not summary_text:
+        flash("No summary available to download.", "danger")
+        return redirect(url_for('summary'))
+
+    # Create a PDF in memory
+    pdf_buffer = BytesIO()
+    pdf = canvas.Canvas(pdf_buffer, pagesize=letter)
+    pdf.setFont("Helvetica", 12)
+
+    # Title
+    pdf.drawString(100, 750, "Summary")
+
+    # Set the starting position for the text
+    text_object = pdf.beginText(100, 730)
+    text_object.setFont("Helvetica", 12)
+
+    # Define maximum width for text (adjust as needed)
+    max_width = 400
+
+    # Split text into lines that fit within the width
+    lines = []
+    for line in summary_text.split("\n"):
+        wrapped_lines = simpleSplit(line, "Helvetica", 12, max_width)
+        lines.extend(wrapped_lines)
+
+    # Adjust vertical positioning and add text
+    y_position = 730
+    for line in lines:
+        if y_position <= 50:  # Create a new page if reaching bottom
+            pdf.showPage()
+            pdf.setFont("Helvetica", 12)
+            y_position = 750  # Reset position for new page
+
+        pdf.drawString(100, y_position, line)
+        y_position -= 20  # Move to the next line
+
+    pdf.showPage()
+    pdf.save()
+
+    pdf_buffer.seek(0)
+
+    return send_file(pdf_buffer, as_attachment=True, download_name='summary.pdf', mimetype='application/pdf')
 
 
 @app.route('/download-pptx', methods=['POST'])
 def download_pptx():
-    summary_text = request.form['summary_text']
+    summary_text = session.get('summary', '')  # Fetch from session
+
+    if not summary_text:
+        flash("No summary available to download.", "danger")
+        return redirect(url_for('summary'))
+
     prs = Presentation()
-    slide_layout = prs.slide_layouts[1]
+    slide_layout = prs.slide_layouts[1]  # Title + Content Layout
     slide = prs.slides.add_slide(slide_layout)
     title = slide.shapes.title
     content = slide.placeholders[1]
+
     title.text = "Summary"
-    content.text = summary_text
+    content.text = summary_text  # Insert summary text
+
     temp = tempfile.NamedTemporaryFile(delete=False, suffix='.pptx')
     prs.save(temp.name)
     temp.seek(0)
+
     return send_file(temp.name, as_attachment=True, download_name='summary.pptx')
+
+@app.route('/text-to-speech', methods=['POST'])
+def text_to_speech():
+    if 'summary' in session:
+        summary_text = session['summary']
+        engine = pyttsx3.init()
+        engine.say(summary_text)
+        engine.runAndWait()
+        return redirect(url_for('summary'))
+    else:
+        return redirect(url_for('dashboard'))
 
 def extract_text_from_image(image_path):
     text = pytesseract.image_to_string(Image.open(image_path))
     return text
 
+def ensure_punkt_tab():
+    """
+    Ensure the NLTK resource 'punkt_tab' is available.
+    """
+    try:
+        nltk.data.find('tokenizers/punkt_tab')
+    except LookupError:
+        nltk.download('punkt_tab')
+
 def summarize_text(text, num_sentences):
+    # Ensure the required NLTK resource is available
+    ensure_punkt_tab()
     sentences = sent_tokenize(text)
     if len(sentences) <= num_sentences:
         return text
@@ -245,16 +281,18 @@ def summarize_text(text, num_sentences):
     summary = ' '.join(sentence for score, sentence in top_sentences)
     return summary
 
-@app.route('/text-to-speech', methods=['POST'])
-def text_to_speech():
-    if 'summary' in session:
-        summary = session['summary']
-        engine = pyttsx3.init()
-        engine.say(summary)
-        engine.runAndWait()
-        return redirect(url_for('summary'))
-    else:
-        return redirect(url_for('dashboard'))
+import nltk
+from nltk.tokenize import sent_tokenize
+
+# Download nltk data (only once)
+nltk.download('punkt')
+
+def generate_summary(text):
+    """Generates a summarized version of the input text"""
+    sentences = sent_tokenize(text)  # Splitting text into sentences
+    summary = "\n".join(sentences[:5])  # Taking first 5 sentences as summary
+    return summary
+
 
 if __name__ == '__main__':
     with app.app_context():

@@ -1,0 +1,3 @@
+[console_scripts]
+canvas=canvas_cli.main:app
+
